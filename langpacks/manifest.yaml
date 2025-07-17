@@ -1,0 +1,40 @@
+# Language Pack v1.1 (Locked 2025-07-17)
+languages:
+  - code: en
+    name: English
+    regions: [global]
+    tier: core
+  - code: fr
+    name: French
+    regions: [global, fr-WestAfrica]
+    tier: core
+  - code: sw
+    iso_639_3: swa
+    name: Swahili
+    regions: [ke, tz, ug, cd]
+    tier: core
+  - code: ha
+    name: Hausa
+    regions: [ng, ne]
+    tier: core
+  - code: am
+    name: Amharic
+    regions: [et]
+    tier: core
+  - code: zu
+    name: isiZulu
+    regions: [za]
+    tier: core
+  - code: sn
+    name: Shona
+    regions: [zw]
+    tier: core
+  - code: nd
+    name: North Ndebele
+    alias: nde-ZW
+    regions: [zw]
+    tier: core
+meta:
+  version: 1.1
+  locked: 2025-07-17
+  maintainer: community@kinga.ai

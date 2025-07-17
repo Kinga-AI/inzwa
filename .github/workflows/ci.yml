@@ -1,0 +1,28 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: DCO Check
+        uses: docker://ghcr.io/zital/dco-check:latest
+        with:
+          fail: "true"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Python sanity build
+        run: |
+          if [ -f python/pyproject.toml ]; then pip install -q build && python -m build python; fi
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: TS build
+        run: |
+          if [ -f ts/package.json ]; then npm ci && npm run build || true; fi

@@ -1,0 +1,18 @@
+# Generic
+.DS_Store
+.env
+.envrc
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+node_modules/
+coverage/
+pytest_cache/
+.mypy_cache/
+.vscode/
+.idea/
+.secrets/
+data/
