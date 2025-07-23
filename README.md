@@ -73,25 +73,6 @@ User hears fluent Shona response
 
 ---
 
-## 📁 Data & Model Training Resources:
-
-**Data types needed:**  
-- **Speech-to-text (ASR)**: 20–50 hrs Shona audio.
-- **Conversational (Q&A)**: 500–1000 conversational pairs.
-- **Text-to-Speech (TTS)**: 5–10 hrs consistent voice recordings.
-
-**Recommended data sources:**
-- [Mozilla Common Voice](https://commonvoice.mozilla.org/)
-- [Masakhane Community](https://www.masakhane.io/)
-- [JW.org Shona](https://www.jw.org/sn/)
-- [Kwayedza News](https://www.kwayedza.co.zw/)
-- [Herald Shona](https://www.herald.co.zw/category/shona/)
-
-**Recording Tools:**  
-- [Audacity](https://www.audacityteam.org/) (open-source recording software)
-
----
-
 ## ⚡ Quick Installation (Local setup):
 
 Clone the repository:
@@ -169,7 +150,7 @@ This project is fully open-source under the [MIT License](LICENSE).
 
 ## 📣 Contact & Community:
 
-* Maintainer: [Your Name](https://github.com/yourusername)
+* Maintainer: [Your Name](https://github.com/TimireSimbarashe)
 * Discussions: GitHub Discussions (coming soon)
 * Masakhane Community: [masakhane.io](https://www.masakhane.io/)
 
