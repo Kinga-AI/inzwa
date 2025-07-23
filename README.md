@@ -1,5 +1,3 @@
-
-```markdown
 # 🎙️ Inzwa – The Fluent Shona Voice Assistant
 
 *“Hey Inzwa-ka, zviri sei?”*
@@ -187,20 +185,6 @@ This project is fully open-source under the [MIT License](LICENSE).
 
 **Together, let’s unlock powerful AI-driven interactions in the Shona language—helping bring cutting-edge technology to millions of native speakers.**
 
-```
-
----
-
-## 🚀 **Conclusion (Why this README Works):**
-
-This README is structured, comprehensive, and professionally aligned with GitHub best practices:
-
-- **Clear introduction:** Simple description of what it does.
-- **Detailed technical sections:** Clear and thorough.
-- **Step-by-step guides:** Easy onboarding.
-- **Optimized for community involvement:** Encourages contributions.
-
-This sets up **Inzwa** clearly as a professional, open-source, community-driven project, attracting contributors, users, and collaborators while demonstrating your serious technical engineering capabilities.
 ```
 
 
