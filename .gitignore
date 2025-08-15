@@ -1,18 +1,15 @@
-# Generic
-.DS_Store
-.env
-.envrc
+# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.egg-info/
-build/
 dist/
-node_modules/
-coverage/
-pytest_cache/
-.mypy_cache/
-.vscode/
-.idea/
-.secrets/
-data/
+build/
+.venv/
+poetry.lock  # If using Poetry
+
+# Models/weights
+weights/
+models/*.bin
+
+# Misc
+.DS_Store

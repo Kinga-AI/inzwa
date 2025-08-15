@@ -1,0 +1,111 @@
+[tool.poetry]
+name = "inzwa"
+version = "0.1.0"
+description = "Real-time Shona Speech-to-Speech Assistant"
+authors = ["Kinga AI Team"]
+license = "Apache-2.0"
+readme = "README.md"
+packages = [{include = "inzwa", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+# Web framework
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.30.1"}
+websockets = "^12.0"
+starlette = "^0.37.2"
+# WebRTC (optional)
+aiortc = {version = "^1.6.0", optional = true}
+
+# Configuration
+pydantic = "^2.7.4"
+pydantic-settings = "^2.3.4"
+python-dotenv = "^1.0.1"
+
+# ASR
+faster-whisper = {version = "^1.0.2", optional = true}
+# whisper-cpp bindings would go here
+silero-vad = {version = "^5.1", optional = true}
+webrtcvad = {version = "^2.0.10", optional = true}
+
+# LLM
+llama-cpp-python = {version = "^0.2.79", optional = true}
+transformers = {version = "^4.41.2", optional = true}
+peft = {version = "^0.11.1", optional = true}
+# vllm = {version = "^0.5.0", optional = true}  # Requires GPU
+
+# TTS
+TTS = {version = "^0.22.0", optional = true}
+onnxruntime = {version = "^1.18.0", optional = true}
+
+# Audio processing
+numpy = "^1.26.4"
+librosa = {version = "^0.10.2", optional = true}
+soundfile = "^0.12.1"
+pyaudio = {version = "^0.2.14", optional = true}
+
+# Observability
+prometheus-client = "^0.20.0"
+opentelemetry-api = {version = "^1.25.0", optional = true}
+opentelemetry-sdk = {version = "^1.25.0", optional = true}
+structlog = "^24.2.0"
+
+# ML utilities
+torch = {version = "^2.3.1", optional = true}
+torchaudio = {version = "^2.3.1", optional = true}
+scipy = "^1.13.1"
+
+# Data handling
+pandas = {version = "^2.2.2", optional = true}
+datasets = {version = "^2.20.0", optional = true}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+pytest-asyncio = "^0.23.7"
+pytest-cov = "^5.0.0"
+black = "^24.4.2"
+ruff = "^0.4.10"
+mypy = "^1.10.1"
+ipython = "^8.25.0"
+
+[tool.poetry.extras]
+full = [
+    "aiortc",
+    "faster-whisper",
+    "silero-vad",
+    "webrtcvad",
+    "llama-cpp-python",
+    "transformers",
+    "peft",
+    "TTS",
+    "onnxruntime",
+    "librosa",
+    "pyaudio",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "torch",
+    "torchaudio",
+    "pandas",
+    "datasets"
+]
+asr = ["faster-whisper", "silero-vad", "webrtcvad"]
+llm = ["llama-cpp-python", "transformers", "peft"]
+tts = ["TTS", "onnxruntime"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "N", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
