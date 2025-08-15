@@ -1,71 +1,79 @@
-## API Reference
+## API Reference (Per .cursorrules - Minimal Surface)
 
-### REST Endpoints
+### Core Endpoints Only
 
-- `GET /healthz`
-  - 200 OK `{status:"ok"}`
+- `GET /healthz` - Liveness check
+  - Response: `{"status":"ok"}`
 
-- `GET /v1/models`
-  - Response: list of ASR/LLM/TTS models, versions, sizes
+- `GET /readyz` - Models ready, caches warm
+  - Response: `{"ready": true, "models": {...}}`
 
-- `POST /v1/asr`
-  - Request (application/json):
+- `POST /v1/admin/warmup` - Load models
+  - Response: `{"versions": {...}, "checksums": {...}}`
+
+- `POST /v1/chat` - LLM streaming (SSE/WS)
+  - Request with Pydantic validation (max 400 chars):
 ```json
-{ "audio_base64": "...", "sample_rate": 16000 }
+{ "messages": [{"role": "user", "content": "Mhoro"}], "stream": true }
 ```
-  - Response:
-```json
-{ "text": "Mhoro", "segments": [{"text":"Mhoro","start_ms":0,"end_ms":320,"conf":0.92}] }
+  - Response: `text/event-stream` with ORJSON:
+```
+data: {"token": "M"}
+data: {"token": "h"}
 ```
 
-- `POST /v1/chat`
-  - Request:
-```json
-{ "messages": [ {"role": "system", "content": "You are a helpful Shona assistant."}, {"role": "user", "content": "Mhoro"} ], "stream": true }
-```
-  - Response: `text/event-stream` with `data: {"token":"..."}` lines
-
-- `POST /v1/tts`
-  - Request:
+- `POST /v1/tts` - Text to audio stream
+  - Request with validation (max 400 chars):
 ```json
 { "text": "Mhoro", "voice": "shona_female_a", "format": "opus" }
 ```
-  - Response: `audio/opus` stream
+  - Response: `audio/opus` stream (20-40ms chunks)
 
-### WebSocket `/ws/audio`
+### WebSocket `/ws/audio` (Primary Transport)
 
-- Connect with header `Authorization: Bearer <token>`
+**Bidirectional audio + JSON events - default per .cursorrules**
+
+- Connect: Optional `Authorization: Bearer <token>`
 - Client → Server:
-  - Control (JSON):
+  - Audio: PCM16 16kHz, 20-40ms frames (binary)
+  - Control (ORJSON):
 ```json
 {"type":"start","session_id":"uuid","codec":"pcm16","sample_rate":16000}
+{"type":"end_turn"}
 ```
-  - Audio (binary): PCM16 20–40 ms frames
-  - Control (JSON): `{"type":"end_turn"}`
 
 - Server → Client:
-  - Events (JSON):
+  - Audio: Opus/PCM16 frames (binary)
+  - Events (ORJSON):
 ```json
-{"type":"asr.partial","text":"Mhoro","start_ms":0,"end_ms":320,"conf":0.92}
-{"type":"llm.partial","token":"Mh"}
+{"type":"asr.partial","text":"...","start_ms":0,"end_ms":320,"conf":0.92}
+{"type":"llm.partial","token":"..."}
 {"type":"tts.start"}
 {"type":"tts.end"}
 ```
-  - Audio (binary): Opus/PCM16 frames
 
-### WebRTC `/rtc/session`
+### WebRTC `/rtc/session` (Optional - Flag Only)
 
-- SDP Offer (POST) → Answer (JSON); then SRTP media; data channel mirrors WS events
+- Only enabled if `enable_webrtc=true`
+- SRTP/DTLS for secure media
+- Data channel mirrors WebSocket events
 
-### Errors
+### Error Handling
 
-- Standard JSON error body:
+- Safe JSON errors (no stack traces):
 ```json
 { "error": { "code": "RATE_LIMIT", "message": "Quota exceeded" } }
 ```
+- Request timeout: 5s (configurable)
+- Max text: 400 chars
+- Max audio: 20 seconds
 
-### Auth
+### Security
 
-- API keys or JWT; pass via `Authorization: Bearer ...`
+- API key/JWT with per-key quotas
+- Strict CORS (no wildcards)
+- No raw audio/text in logs
+- HMAC user_hash only
+- Rate limiting via token buckets
 
 

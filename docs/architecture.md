@@ -6,14 +6,14 @@
 - 100% Python runtime for all services; no Go components. Favor portable, open‑source stacks with zero/low‑cost deployment paths (e.g., Hugging Face Spaces, Google Colab for training).
 - Treat latency, safety, reliability, and privacy as first‑class product features.
 
-### Core Principles
+### Core Principles (Per .cursorrules)
 
-- Streaming by default: incremental ASR, incremental LLM decoding, streaming TTS audio.
-- Low‑latency first: quantization, GPU when available, CPU‑only graceful degradation.
-- Modularity: swappable ASR/LLM/TTS engines behind stable interfaces; integrate with langpacks for multilingual extension.
-- Python everywhere: FastAPI + aiortc/Starlette WebSockets + asyncio orchestration.
-- Operational excellence: observability, automated tests, reproducible builds, model versioning.
-- Data responsibility: PII‑aware logging, explicit retention, opt‑in data collection.
+- **Very low latency** first: streaming everywhere, bounded queues (max 8), small chunks (20–40 ms)
+- **Very lightweight**: minimum deps, minimal routes, minimal configuration
+- **High security**: tight CORS, TLS, API keys/JWT, rate limits; no raw payload logs
+- **Great usability**: one clean UI, "it just works"; sane defaults; clear errors
+- **Clean code**: typed, mypy-friendly, small functions (<50 lines), no utils dumping ground
+- **Quantize & cache**: Q4/Q5/INT8, warm models, read-through caches, idempotent renders
 
 ### High‑Level Architecture
 
@@ -36,10 +36,11 @@ graph TD
 ### Component Overview
 
 - Gateway API
-  - FastAPI app exposing:
-    - WebRTC (via aiortc) or WebSocket endpoint for streaming audio in/out
-    - REST endpoints for batch `asr`, `chat`, `tts`, health, and model info
-  - JWT/API key auth, rate limiting, CORS, request validation
+  - FastAPI app with ORJSONResponse (ultra-fast)
+  - WebSocket `/ws/audio` for bidirectional streaming (default)
+  - Minimal REST endpoints: `/v1/tts`, `/v1/chat` (SSE/WS)
+  - `/healthz`, `/readyz`, `/v1/admin/warmup` only
+  - JWT/API key with per-key quotas; strict CORS (no wildcards)
 
 - ASR Service (Whisper family)
   - Primary: `faster-whisper` (CTranslate2) for CPU/GPU, streaming, INT8 quantization
@@ -47,24 +48,28 @@ graph TD
   - VAD: Silero VAD or WebRTC VAD + optional RNNoise denoise
   - Emits incremental transcripts, timestamps, confidence
 
-- Orchestrator
-  - Async Python controller that receives partial transcripts, manages dialogue state, and streams tokens to TTS as they are generated
-  - Applies system prompts, tools, safety filters, and routing logic (e.g., fallback to translation, retrieval)
-  - Backpressure control and pacing between ASR → LLM → TTS
+- Orchestrator (Ultra-light, <50 lines)
+  - Minimal async controller: ASR partials → LLM tokens → phrase chunks → TTS frames
+  - Bounded queues (max 8 items per .cursorrules)
+  - Simple phrase boundary detection
+  - Backpressure by awaiting on bounded queues; drop low-value partials under stress
 
 - LLM Service
-  - Base: Mistral‑2B/Gemma‑2B or Phi-3 mini; LoRA fine‑tuned for Shona conversational style
-  - Inference: vLLM (GPU) for streaming, KV‑cache reuse, and speculative decoding; fallback: llama‑cpp‑python (CPU, quantized Q4/Q5)
-  - Tooling: PEFT/LoRA for fine‑tuning; prompt/response safety filters; optional RAG for knowledge retrieval (e.g., via FAISS embeddings)
+  - Base: Mistral-2B with Shona LoRA (ultra-light)
+  - Primary: llama-cpp-python Q4_K_M (CPU-first)
+  - Optional: vLLM (GPU) as flag only
+  - Reduce max_new_tokens under load
+  - No heavy tooling; safety via simple regex filters
 
 - TTS Service
   - Coqui TTS VITS‑lite fine‑tuned on a single Shona voice; ONNX/TorchScript for optimized inference
   - Streams Opus or PCM16 chunks immediately on partial text
 
-- Shared Services
-  - Feature flags & configuration (Hydra/pydantic‑settings)
-  - Observability (Prometheus metrics, OpenTelemetry traces, structured logs)
-  - Model registry & artifact store (Hugging Face Hub / MLflow / local registry)
+- Ops Services (Minimal)
+  - Settings via pydantic-settings with INZWA_ prefix
+  - Prometheus metrics only (no OpenTelemetry unless needed)
+  - No raw audio/text logging; HMAC user_hash only
+  - Model checksums verified on load
 
 ### End‑to‑End Flow (Streaming)
 
@@ -76,12 +81,14 @@ graph TD
 6) TTS begins synthesis on earliest phrase, streams audio back to user.
 7) Loop continues until end of user turn; barge‑in handled by VAD and session policy.
 
-### Low‑Latency Strategy (Design Targets)
+### Performance Budgets (Per .cursorrules)
 
-- ASR: faster‑whisper `small`/`base` INT8; aim 200–400 ms per second of audio on CPU; <150 ms on GPU.
-- LLM: 2B parameter model, 4‑bit quant on CPU; GPU with vLLM for <200 ms TTFB and 50–200 tok/s.
-- TTS: VITS‑lite with ONNX; <200 ms startup, continuous frames at <40 ms chunk cadence.
-- Pipeline: start‑speaking time (TTFW) <500 ms; total response <1 s for short utterances.
+- P50 TTFW: ≤ 500ms (first audio frame out)
+- P95 round-trip: ≤ 1200ms (short utterance)
+- ASR RTF: 0.2–0.5× (faster-whisper small/base INT8)
+- LLM TTFB: ≤ 600–900ms CPU Q4 | ≤ 200–400ms GPU
+- TTS TTFW: 200–300ms
+- Token rate: ≥10–30 tok/s CPU | ≥50–200 tok/s GPU
 
 ### Protocols and Media
 
@@ -117,38 +124,27 @@ graph TD
   - `TTS.synthesize_stream(text) -> AsyncIterator[AudioChunk]`
 - Enables A/B of engines without touching the orchestrator contract.
 
-### Reference Repository Structure (Python‑only)
+### Reference Repository Structure (Per .cursorrules)
 
 ```
 src/
   inzwa/
-    __init__.py
-    api/
-      app.py
-    asr/
-      __init__.py
-    config/
-      __init__.py
-    llm/
-      __init__.py
-    models/
-      __init__.py
-    orchestration/
-      __init__.py
-    telemetry/
-      __init__.py
-    tts/
-      __init__.py
-    utils/
-      __init__.py
-tests/
-  test_api.py
+    api/          # FastAPI app, routes, middleware
+    asr/          # ASR adapters
+    llm/          # LLM adapters  
+    tts/          # TTS adapters
+    orch/         # Tiny orchestrator + queues (was orchestration/)
+    ops/          # Settings, logging, metrics, limits (was config/ + telemetry/)
+    ui/           # Minimal web UI
+    models/       # Pydantic schemas
+    utils/        # Minimal helpers only
+tests/          # Unit + light integration
 scripts/
-  train_llm.py
 pyproject.toml
 Dockerfile
 Makefile
 docs/
+TASKS.md        # MVP task tracking
 ```
 
 ### Configuration and Feature Flags

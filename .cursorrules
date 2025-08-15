@@ -1,0 +1,351 @@
+# =====================================================================
+#  Inzwa .cursorrules  —  Ultra-Light, Ultra-Fast, Ultra-Secure (Python)
+# =====================================================================
+# Mission:
+#   Build a real-time Shona speech-to-speech assistant with **very low latency**,
+#   **very lightweight** architecture, **high security**, and **great usability**.
+#   Keep interfaces minimal (ChatGPT-like), code clean, and open-source first.
+#
+# Core truths:
+#   • Latency wins. • Lightweight beats clever. • Security by default.
+#   • Pydantic & PyTorch where they apply. • Quantize + cache everything.
+#   • No overengineering. • Great UI with minimal surface area.
+#
+# Output policy:
+#   Cursor should produce final artifacts (code, diffs, commands) with short, clear
+#   rationales. Do NOT output chain-of-thought.
+# =====================================================================
+
+
+# =========================
+# 0) PRODUCT SNAPSHOT
+# =========================
+[product]
+name = "Inzwa — Real-Time Shona Speech-to-Speech"
+goals = [
+  "Sub-1s round-trip for short utterances",
+  "Streaming ASR → minimal Orchestrator → Streaming TTS",
+  "Minimal endpoints + beautiful, simple UI",
+  "CPU-first with graceful GPU acceleration",
+  "Security, privacy, and correctness by default"
+]
+
+# =========================
+# 1) ULTRA-LIGHT STACK
+# =========================
+[stack.minimal]
+python = "3.11+"
+api = ["FastAPI", "ORJSONResponse", "uvicorn[standard]"]
+streaming = ["WebSocket via Starlette (default)", "aiortc/WebRTC (flag)"]
+config = ["pydantic v2 (BaseModel, BaseSettings)"]
+http = ["httpx.AsyncClient (single DI instance, timeouts, retries)"]
+asr = ["faster-whisper (CTranslate2) INT8", "whisper.cpp (CPU)"]
+llm = ["llama-cpp-python Q4/Q5 (CPU)", "vLLM (GPU) — flag"]
+tts = ["Coqui TTS VITS-lite (Torch/ONNX), streaming"]
+metrics = ["prometheus-client"]
+optional = ["Redis (cache/ratelimit)", "Postgres (only if truly needed)", "MinIO/S3 (assets)"]
+
+[stack.disallowed]
+- Heavy frameworks beyond those above
+- Over-abstracted layers, excessive indirection
+- Global singletons for secrets/clients (use DI)
+
+# =========================
+# 2) HIGH-LEVEL PRINCIPLES
+# =========================
+[principles.always]
+- **Very low latency** first: streaming everywhere, bounded queues, small chunks (20–40 ms).
+- **Very lightweight**: minimum deps, minimal routes, minimal configuration.
+- **High security**: tight CORS, TLS, API keys/JWT, rate limits; no raw payload logs.
+- **Great usability**: one clean UI, “it just works”; sane defaults; clear errors.
+- **Clean code**: typed, mypy-friendly, small functions (<50 lines), no utils dumping ground.
+- **Pydantic & PyTorch where they apply**; export ONNX when it’s faster on CPU.
+- **Quantize & cache**: Q4/Q5/INT8, warm models, read-through caches, idempotent renders.
+
+[principles.never]
+- Never block the event loop with CPU-heavy work (offload to background task).
+- Never make network calls without timeouts, retries (max 2), circuit breakers.
+- Never accept/emit unbounded inputs/outputs; cap and truncate safely.
+- Never broaden CORS or leak stack traces/secrets/raw audio in logs.
+- Never add services “just in case”. YAGNI.
+
+# =========================
+# 3) PERFORMANCE BUDGETS
+# =========================
+[budgets]
+p50_ttfw_ms = 500        # first audio frame out
+p95_roundtrip_ms = 1200  # short utterance
+asr_rtf_cpu = "0.2–0.5× (faster-whisper small/base INT8)"
+llm_ttfb = "<= 600–900 ms CPU Q4 | <= 200–400 ms GPU"
+tts_ttfw_ms = 200–300
+token_rate = ">=10–30 tok/s CPU | >=50–200 tok/s GPU"
+
+[perf.rules]
+- Keep hot models resident; warm on /admin/warmup.
+- Prefer ONNX or quantized backends on CPU.
+- Cache: (prompt_hash, mode) → text/audio (TTL 1–6h).
+- Idempotent TTS/clip renders keyed by hash.
+- Backpressure by awaiting on bounded queues; drop low-value partials under stress.
+
+# =========================
+# 4) SECURITY & PRIVACY
+# =========================
+[security]
+- TLS, strict headers, HSTS. SRTP/DTLS when WebRTC is enabled.
+- API key/JWT with per-key quotas; Redis token buckets for rate-limit.
+- CORS allow-list only; no wildcard.
+- Input sanitation: strip control chars, validate language codes, cap sizes.
+- No raw audio/text logging. Store only minimal, anonymized metrics (HMAC user_hash).
+- Secrets via env (pydantic-settings). Rotate. Never in code or logs.
+- Verify model artifact checksums. Pin versions. Create SBOM & scan images.
+
+# =========================
+# 5) REPO LAYOUT (MINIMAL)
+# =========================
+[repo.structure]
+must_exist = [
+  "src/inzwa/api/",          # FastAPI app, routes, middleware
+  "src/inzwa/asr/",          # ASR adapters
+  "src/inzwa/llm/",          # LLM adapters
+  "src/inzwa/tts/",          # TTS adapters
+  "src/inzwa/orch/",         # tiny orchestrator + queues
+  "src/inzwa/ops/",          # settings, logging, metrics, limits
+  "src/inzwa/ui/",           # minimal web UI
+  "tests/"                   # unit + light integration
+]
+
+# =========================
+# 6) MINIMAL INTERFACES
+# =========================
+[interfaces]
+asr = "ASR.transcribe_stream(frames: AsyncIterator[bytes]) -> AsyncIterator[TranscriptChunk]"
+llm = "LLM.generate_stream(messages: list[Message]) -> AsyncIterator[TokenChunk]"
+tts = "TTS.synthesize_stream(text_iter: AsyncIterator[str]) -> AsyncIterator[AudioChunk]"
+
+[schemas]
+TranscriptChunk = "{ text: str, is_final: bool, start_ms: int, end_ms: int, confidence: float }"
+TokenChunk      = "{ token: str, is_final: bool, logprob: float | None }"
+AudioChunk      = "{ format: Literal['opus','pcm16'], sample_rate: int, payload: bytes }"
+Message         = "{ role: Literal['system','user','assistant'], content: str }"
+
+# =========================
+# 7) API SURFACE (TINY)
+# =========================
+[api.routes]
+- WS   /ws/audio     : bidirectional audio + JSON events (default transport)
+- POST /v1/tts       : text → audio stream (Opus preferred)
+- POST /v1/chat      : messages[] → streaming tokens (SSE/WS)
+- GET  /healthz      : liveness
+- GET  /readyz       : models ready, caches warm
+- POST /v1/admin/warmup : load models, return versions + checksums
+
+[api.middleware.required]
+- request_id + timing
+- error mapping → safe JSON
+- rate limiting
+- security headers + strict CORS
+- ORJSON serialization
+
+# =========================
+# 8) CODING STANDARDS
+# =========================
+[coding]
+typing = "mypy-friendly, prefer Literal, Annotated, TypedDict where useful"
+functions = "single purpose, <50 lines, early returns, explicit errors"
+errors = "domain exceptions mapped by middleware; never expose tracebacks"
+serialization = "ORJSON; no custom encoders unless mandatory"
+concurrency = "asyncio tasks + bounded queues; no unbounded fan-out"
+style = ["Ruff","Black","Mypy (--strict where feasible)"]
+
+# =========================
+# 9) CACHING & QUANTIZATION
+# =========================
+[optimize]
+- Enable faster-whisper INT8; prefer base/small.
+- LLM default: llama-cpp-python Q4_K_M; reduce max_new_tokens under load.
+- TTS: VITS-lite → export ONNX; stream frames early.
+- Redis (flag): read-through cache for hot prompts; TTS/clip idempotency keys.
+- Warm paths on boot; expose /admin/warmup.
+
+# =========================
+# 10) ASSISTANT WORKFLOW (HOW TO CHANGE CODE)
+# =========================
+[assistant.mode]
+- Before coding (3 bullets max):
+  1) Task summary
+  2) Files to touch (create/edit) with 1-line reasons
+  3) Plan steps (tiny)
+- Implement minimal viable code to meet budgets & pass types/tests.
+- Add/modify tests in same change.
+- Output: diffs + run commands + short rationale.
+
+[assistant.safety]
+- If a request conflicts with security/latency constraints: refuse and propose a compliant alternative.
+- Prefer assumptions over questions; document assumptions inline.
+
+# =========================
+# 11) CHECKLISTS (MUST PASS)
+# =========================
+[checklist.new_route]
+- [ ] Pydantic v2 models (request/response) with caps & validators
+- [ ] Async handler; time budget & structured logging
+- [ ] DI for shared clients; **no globals**
+- [ ] Input sanitation (strip control chars; validate codec/lang)
+- [ ] Metrics & request_id; safe error mapping
+- [ ] Unit test + example curl in docstring
+
+[checklist.new_stream]
+- [ ] 20–40 ms frames; bounded queues
+- [ ] Backpressure & cancellation
+- [ ] Phrase-boundary pacing to TTS
+- [ ] Timeouts & fallbacks (smaller models)
+- [ ] Emit TTFW, tok/s, RTF metrics
+
+[checklist.security]
+- [ ] API key/JWT enforced or explicitly disabled (dev only)
+- [ ] CORS allow-list; strict headers
+- [ ] No raw audio/text in logs; HMAC user_hash if needed
+- [ ] Secrets via env; verified on boot
+- [ ] Model checksums verified
+
+# =========================
+# 12) TESTING (FAST & FOCUSED)
+# =========================
+[tests]
+- pytest + pytest-asyncio; avoid sleeps; use timeouts & fakes.
+- Golden tests: tiny Shona corpus—style & safety filters.
+- Stream tests: partial order monotonicity; bounded queue behavior.
+- Latency test: synthetic audio → P95 round-trip < 1200 ms (CPU).
+
+# =========================
+# 13) TEMPLATES (ULTRA-LIGHT)
+# =========================
+[templates.settings]
+- file: src/inzwa/ops/settings.py
+- content: |
+    from __future__ import annotations
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+    from pydantic import Field
+
+    class Settings(BaseSettings):
+        model_config = SettingsConfigDict(env_prefix="INZWA_", case_sensitive=False)
+        debug: bool = False
+        cors_allowed_origins: str = "http://localhost:7860"
+        request_timeout_s: float = 5.0
+        max_text_chars: int = 400
+        max_audio_seconds: int = 20
+        enable_webrtc: bool = False
+        asr_engine: str = "faster-whisper"   # or "whisper.cpp"
+        asr_model: str = "small"
+        llm_engine: str = "llama-cpp"        # or "vllm"
+        llm_model: str = "mistral-2b-shona-lora"
+        tts_engine: str = "coqui-vits-lite"
+        audio_out_codec: str = "opus"
+
+[templates.route]
+- file: src/inzwa/api/routes/tts.py
+- content: |
+    from __future__ import annotations
+    from fastapi import APIRouter, Request
+    from pydantic import BaseModel, Field
+    from starlette.responses import StreamingResponse
+    from inzwa.ops.settings import Settings
+    from inzwa.api.middleware import request_id_header
+    from inzwa.ops.metrics import METRICS
+
+    router = APIRouter()
+
+    class TTSReq(BaseModel):
+        text: str = Field(min_length=1, max_length=400)
+        voice: str | None = None
+        lang: str = Field(default="sn")
+
+    @router.post("/v1/tts")
+    async def tts_endpoint(req: Request, body: TTSReq):
+        rid = request_id_header(req)
+        text = body.text.strip()
+        # stream frames from DI TTS handle
+        tts = req.app.state.tts
+        async def gen():
+            async for chunk in tts.synthesize_stream(iter([text])):
+                yield chunk.payload
+        return StreamingResponse(gen(), media_type="audio/ogg")
+
+[templates.orchestrator]
+- file: src/inzwa/orch/orchestrator.py
+- content: |
+    from __future__ import annotations
+    import asyncio
+    from typing import AsyncIterator
+    from inzwa.asr.types import TranscriptChunk
+    from inzwa.tts.types import AudioChunk
+    from inzwa.llm.types import TokenChunk
+
+    class Orchestrator:
+        def __init__(self, asr, llm, tts, *, max_queue:int=8):
+            self.asr, self.llm, self.tts = asr, llm, tts
+            self.max_queue = max_queue
+
+        async def run(self, frames: AsyncIterator[bytes]) -> AsyncIterator[AudioChunk]:
+            # Minimal: ASR partials → LLM tokens → phrase chunks → TTS frames
+            async for partial in self.asr.transcribe_stream(frames):
+                if not partial.text:
+                    continue
+                # simple phrase boundary heuristic
+                if partial.is_final or partial.text.endswith((".", "?", "!", ",")):
+                    async def phrase_iter():
+                        buf = ""
+                        async for tok in self.llm.generate_stream([{"role":"user","content": partial.text}]):
+                            buf += tok.token
+                            if tok.is_final or buf.endswith((".","?","!")):
+                                yield buf
+                                buf = ""
+                        if buf:
+                            yield buf
+                    async for audio in self.tts.synthesize_stream(phrase_iter()):
+                        yield audio
+
+# =========================
+# 14) PR & CI STANDARDS
+# =========================
+[git]
+commits = "Conventional Commits"
+pr_checklist = [
+  "Tests added/updated; all pass",
+  "mypy, ruff, black clean",
+  "No secrets; configs via env",
+  "Latency & security notes if changed",
+]
+
+# =========================
+# 15) AUTO-REJECT RULES
+# =========================
+[auto.reject]
+- Any route without Pydantic models and caps
+- Any I/O call without timeout & retry
+- Any synchronous CPU loop in request path
+- Any broad CORS or stack traces leaked
+- Any raw audio/text in logs
+- Any heavy dependency added without justification & removal plan
+
+# =========================
+# 16) EXAMPLE TASK PROMPTS (FOR CURSOR)
+# =========================
+[examples]
+- "Add /ws/audio WebSocket: accept 16 kHz PCM16 20–40 ms frames; emit JSON events (asr.partial, tts.start/end) and binary Opus frames. Bound queues; add latency metrics."
+- "Implement ASR.transcribe_stream using faster-whisper small INT8 with Silero VAD. Output TranscriptChunk with timestamps & confidence. Unit tests with prerecorded sample."
+- "Wire llama-cpp-python Q4_K_M generator with streaming tokens and max_new_tokens cap; add CPU fallback flag and tok/s metric."
+- "Integrate Coqui VITS-lite streaming TTS (ONNX if available). Add idempotent render key for text+voice and return Opus stream."
+- "Add /readyz to verify models loaded & warm; include versions and SHA256 in JSON."
+
+# =========================
+# 17) RELEASE CHECK
+# =========================
+[release]
+- [ ] Warmup < 2s and models resident
+- [ ] P50 TTFW ≤ 500 ms; P95 round-trip ≤ 1200 ms (short utterances)
+- [ ] Security headers & CORS strict
+- [ ] No raw payload logging; metrics only
+- [ ] SBOM & image scan clean (optional in MVP)
+
+# END

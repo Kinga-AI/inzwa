@@ -1,15 +1,18 @@
 ## Technical Specifications: Inzwa (Python‑Only)
 
-### Runtime and Dependencies
+### Runtime and Dependencies (Per .cursorrules)
 
-- Python ≥ 3.10
-- FastAPI, Uvicorn, Starlette
-- aiortc (WebRTC) and/or WebSocket (websockets/starlette)
-- ASR: faster‑whisper (CTranslate2) or whisper.cpp bindings; silero‑vad; rnnoise (optional)
-- LLM: vLLM client (GPU) or llama‑cpp‑python (CPU); transformers/PEFT for LoRA
-- TTS: Coqui TTS (VITS‑lite), onnxruntime, torchaudio
-- Telemetry: prometheus‑client, opentelemetry‑sdk, structlog/loguru
-- Config: pydantic‑settings, hydra‑core (optional)
+- Python ≥ 3.11
+- **Ultra-light stack only**:
+  - FastAPI with ORJSONResponse, uvicorn[standard]
+  - WebSocket via Starlette (default), aiortc/WebRTC (flag only)
+  - pydantic v2 (BaseModel, BaseSettings)
+  - httpx.AsyncClient (single DI instance, timeouts, retries)
+- **ASR**: faster-whisper (CTranslate2) INT8, whisper.cpp (CPU)
+- **LLM**: llama-cpp-python Q4/Q5 (CPU-first), vLLM (GPU flag only)
+- **TTS**: Coqui TTS VITS-lite (Torch/ONNX), streaming
+- **Metrics**: prometheus-client only (no OpenTelemetry unless needed)
+- **Optional**: Redis (cache/ratelimit), Postgres (only if truly needed)
 
 ### Media and Codecs
 
@@ -27,13 +30,15 @@
 
 ### LLM Subsystem
 
-- Base models: Mistral‑2B/Gemma‑2B
-- Fine‑tuning: LoRA (rank 8–16), bf16/fp16 on a single 24 GB GPU; 1–3 epochs; cosine LR
-- Inference:
-  - GPU path: vLLM with tensor parallel=1, paged attention; streaming via SSE/WebSocket
-  - CPU path: llama‑cpp‑python Q4_K_M; context 4k tokens; 10–30 tok/s on modern CPU
-- Prompting: system prompt tuned for Shona style; tools gated behind keywords
-- Safety: pre‑ and post‑generation regex filters; refusal templates
+- Base model: Mistral-2B with Shona LoRA
+- **CPU-first**: llama-cpp-python Q4_K_M default
+  - Context: 4k tokens max
+  - Performance: ≥10-30 tok/s on modern CPU
+  - Reduce max_new_tokens under load
+- **GPU optional**: vLLM (flag only)
+  - TTFB: ≤200-400ms
+  - Throughput: ≥50-200 tok/s
+- Safety: Simple regex filters only (no heavy frameworks)
 
 ### TTS Subsystem
 
@@ -42,41 +47,45 @@
 - Audio output: Opus bitrate 24–32 kbps; optional WAV for offline
 - Latency: <0.5 s sentence; <0.2 s TTFW
 
-### Orchestrator
+### Orchestrator (Ultra-light)
 
-- Async Python tasks with bounded queues; cancellation & timeouts per stage
-- Phrase detection from token stream using punctuation heuristics and timing
-- Barge‑in: monitor VAD during TTS; on user speech, pause TTS and prioritize ASR
+- **<50 lines per function rule**
+- Bounded queues: max 8 items (strict)
+- Simple phrase boundary: punctuation check
+- Minimal pipeline: ASR partials → LLM tokens → phrase chunks → TTS frames
+- Backpressure: await on queues, drop low-value partials under stress
 
-### Configuration (pydantic‑settings)
+### Configuration (Per .cursorrules template)
 
 ```python
 class Settings(BaseSettings):
-    enable_webrtc: bool = True
-    asr_engine: str = "faster-whisper"  # or "whisper.cpp"
+    model_config = SettingsConfigDict(env_prefix="INZWA_", case_sensitive=False)
+    debug: bool = False
+    cors_allowed_origins: str = "http://localhost:7860"
+    request_timeout_s: float = 5.0
+    max_text_chars: int = 400
+    max_audio_seconds: int = 20
+    enable_webrtc: bool = False  # Flag only
+    asr_engine: str = "faster-whisper"
     asr_model: str = "small"
-    llm_engine: str = "vllm"            # or "llama-cpp"
+    llm_engine: str = "llama-cpp"  # CPU-first
     llm_model: str = "mistral-2b-shona-lora"
     tts_engine: str = "coqui-vits-lite"
     audio_out_codec: str = "opus"
-    max_concurrent_sessions: int = 50
 ```
 
-### Public REST API Schemas (excerpt)
+### API Surface (Tiny per .cursorrules)
 
-```json
-POST /v1/asr
-Request: { "audio_base64": "...", "sample_rate": 16000 }
-Response: { "text": "...", "segments": [ { "text": "...", "start_ms": 0, "end_ms": 850 } ] }
-
-POST /v1/chat
-Request: { "messages": [ {"role": "user", "content": "Mhoro"} ], "stream": true }
-Response (SSE/stream): data: {"token": "M"}\n data: {"token": "h"} ...
-
-POST /v1/tts
-Request: { "text": "Mhoro dunia", "voice": "shona_female_a" }
-Response: audio/opus stream
 ```
+WS   /ws/audio     : bidirectional audio + JSON events (default transport)
+POST /v1/tts       : text → audio stream (Opus preferred)
+POST /v1/chat      : messages[] → streaming tokens (SSE/WS)
+GET  /healthz      : liveness
+GET  /readyz       : models ready, caches warm
+POST /v1/admin/warmup : load models, return versions + checksums
+```
+
+**Note**: /v1/asr endpoint removed per .cursorrules (use WebSocket for ASR)
 
 ### WebSocket Message Types (excerpt)
 

@@ -1,57 +1,56 @@
-# Configuration Guide
+# Configuration Guide (Per .cursorrules)
 
 ## Environment Variables
 
-Inzwa uses environment variables for configuration. Copy `.env.example` to `.env` and customize as needed.
+**All settings use INZWA_ prefix per .cursorrules**. Copy `.env.example` to `.env` and customize.
 
 ## Configuration Options
 
-### API Settings
+### Core Settings (Minimal)
 
 ```bash
-# Server Configuration
-API_HOST=0.0.0.0
-API_PORT=8000
-CORS_ORIGINS=["*"]
+# Per .cursorrules template
+INZWA_DEBUG=false
+INZWA_CORS_ALLOWED_ORIGINS=http://localhost:7860  # No wildcards!
+INZWA_REQUEST_TIMEOUT_S=5.0
+INZWA_MAX_TEXT_CHARS=400
+INZWA_MAX_AUDIO_SECONDS=20
 
-# Authentication
-REQUIRE_AUTH=false
-API_KEY=your-secret-key-here
+# Auth (optional in dev)
+INZWA_REQUIRE_AUTH=false
+INZWA_API_KEY=your-secret-key-here
 ```
 
-### ASR (Speech Recognition) Settings
+### ASR Settings
 
 ```bash
-# Engine Selection
-ASR_ENGINE=faster-whisper  # Options: faster-whisper, whisper.cpp
-ASR_MODEL=small            # Options: tiny, base, small, medium, large
-ASR_DEVICE=cpu            # Options: cpu, cuda
-ASR_COMPUTE_TYPE=int8     # Options: int8, float16, float32
+# Ultra-light per .cursorrules
+INZWA_ASR_ENGINE=faster-whisper   # or whisper.cpp
+INZWA_ASR_MODEL=small             # base/small only (no large models)
+INZWA_ASR_DEVICE=cpu
+INZWA_ASR_COMPUTE_TYPE=int8       # INT8 quantization mandatory
 
-# Voice Activity Detection
-ASR_VAD_ENABLED=true
-ASR_VAD_MODEL=silero      # Options: silero, webrtc
-
-# Model Path (optional)
-ASR_MODEL_PATH=/path/to/custom/model
+# VAD
+INZWA_ASR_VAD_ENABLED=true
+INZWA_ASR_VAD_MODEL=silero        # or webrtc
 ```
 
-### LLM (Language Model) Settings
+### LLM Settings
 
 ```bash
-# Engine Selection
-LLM_ENGINE=llama-cpp      # Options: llama-cpp, vllm
-LLM_MODEL=mistral-2b-shona-lora
-LLM_DEVICE=cpu           # Options: cpu, cuda
+# CPU-first per .cursorrules
+INZWA_LLM_ENGINE=llama-cpp        # vLLM only as flag
+INZWA_LLM_MODEL=mistral-2b-shona-lora
+INZWA_LLM_DEVICE=cpu
 
-# Generation Parameters
-LLM_MAX_TOKENS=512
-LLM_TEMPERATURE=0.7
-LLM_CONTEXT_SIZE=4096
+# Constrained generation
+INZWA_LLM_MAX_TOKENS=512          # Reduce under load
+INZWA_LLM_TEMPERATURE=0.7
+INZWA_LLM_CONTEXT_SIZE=4096
 
-# Quantization (for llama-cpp)
-LLM_QUANTIZATION=Q4_K_M  # Options: Q4_0, Q4_K_M, Q5_K_M, Q8_0
-LLM_GPU_LAYERS=0        # Number of layers to offload to GPU
+# Quantization mandatory
+INZWA_LLM_QUANTIZATION=Q4_K_M     # Q4/Q5 only
+INZWA_LLM_GPU_LAYERS=0
 
 # Model Path (optional)
 LLM_MODEL_PATH=/path/to/model.gguf
@@ -76,14 +75,14 @@ TTS_MODEL_PATH=/path/to/tts/model
 ### Performance Settings
 
 ```bash
-# Session Management
-MAX_CONCURRENT_SESSIONS=50
-SESSION_TIMEOUT_SECONDS=60
+# Per .cursorrules limits
+INZWA_MAX_CONCURRENT_SESSIONS=50
+INZWA_SESSION_TIMEOUT_SECONDS=60
 
-# Streaming Configuration
-STREAMING_ENABLED=true
-AUDIO_CHUNK_MS=20       # Audio chunk duration in milliseconds
-BACKPRESSURE_THRESHOLD=100
+# Streaming (mandatory)
+INZWA_STREAMING_ENABLED=true
+INZWA_AUDIO_CHUNK_MS=20          # 20-40ms chunks only
+INZWA_BACKPRESSURE_THRESHOLD=8   # Max queue size per .cursorrules
 
 # Hardware Optimization
 GPU_POLICY=prefer       # Options: prefer, require, disable
