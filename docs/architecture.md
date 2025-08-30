@@ -1,4 +1,4 @@
-## Inzwa Architecture: Real‑Time Shona Speech‑to‑Speech Assistant (Python‑Only)
+## Izwi Architecture: Real‑Time Shona Speech‑to‑Speech Assistant (Python‑Only)
 
 ### Vision and Goals
 
@@ -66,7 +66,7 @@ graph TD
   - Streams Opus or PCM16 chunks immediately on partial text
 
 - Ops Services (Minimal)
-  - Settings via pydantic-settings with INZWA_ prefix
+  - Settings via pydantic-settings with IZWI_ prefix
   - Prometheus metrics only (no OpenTelemetry unless needed)
   - No raw audio/text logging; HMAC user_hash only
   - Model checksums verified on load
@@ -128,7 +128,7 @@ graph TD
 
 ```
 src/
-  inzwa/
+  izwi/
     api/          # FastAPI app, routes, middleware
     asr/          # ASR adapters
     llm/          # LLM adapters  

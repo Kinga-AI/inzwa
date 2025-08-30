@@ -1,4 +1,4 @@
-## MLOps and Data Lifecycle: Inzwa
+## MLOps and Data Lifecycle: Izwi
 
 ### Objectives
 

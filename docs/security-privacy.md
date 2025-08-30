@@ -1,4 +1,4 @@
-## Security and Privacy: Inzwa
+## Security and Privacy: Izwi
 
 ### Objectives
 

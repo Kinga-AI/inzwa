@@ -16,13 +16,13 @@
 
 #### Implementation:
 ```html
-<!-- src/inzwa/ui/index.html -->
+<!-- src/izwi/ui/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inzwa - Shona Voice Assistant</title>
+    <title>Izwi - Shona Voice Assistant</title>
     <style>
         * {
             margin: 0;
@@ -192,7 +192,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎙️ Inzwa</h1>
+        <h1>🎙️ Izwi</h1>
         <p class="subtitle">Shona Voice Assistant</p>
         
         <div class="status" id="status">
@@ -222,7 +222,7 @@
     </div>
     
     <script>
-        class InzwaUI {
+        class IzwiUI {
             constructor() {
                 this.ws = null;
                 this.audioContext = null;
@@ -578,7 +578,7 @@
         }
         
         // Initialize UI
-        const ui = new InzwaUI();
+        const ui = new IzwiUI();
     </script>
 </body>
 </html>
@@ -617,7 +617,7 @@ def test_ui_loads(driver):
     driver.get("http://localhost:8000/")
     
     # Check title
-    assert "Inzwa" in driver.title
+    assert "Izwi" in driver.title
     
     # Check main elements exist
     assert driver.find_element(By.ID, "recordBtn")
@@ -677,7 +677,7 @@ def test_ui_performance():
     """Test UI bundle size."""
     import os
     
-    ui_file = "src/inzwa/ui/index.html"
+    ui_file = "src/izwi/ui/index.html"
     
     # Check file size
     size = os.path.getsize(ui_file)
@@ -774,8 +774,8 @@ COPY src/ /app/src/
 COPY .env.example /app/.env
 
 # Create non-root user
-RUN useradd -m -u 1000 inzwa && chown -R inzwa:inzwa /app
-USER inzwa
+RUN useradd -m -u 1000 izwi && chown -R izwi:izwi /app
+USER izwi
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -785,7 +785,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Start command
-CMD ["uvicorn", "src.inzwa.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.izwi.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 #### HuggingFace Spaces Deployment:
@@ -795,19 +795,19 @@ import os
 import sys
 sys.path.insert(0, 'src')
 
-from inzwa.api.app import app
+from izwi.api.app import app
 
 # HF Spaces configuration
-title = "Inzwa - Shona Voice Assistant"
+title = "Izwi - Shona Voice Assistant"
 description = "Real-time Shona speech-to-speech assistant"
-article = "https://github.com/kinga-ai/inzwa"
+article = "https://github.com/kinga-ai/izwi"
 
 # Gradio interface (optional)
 if os.getenv("SPACE_ID"):
     import gradio as gr
     
     def process_audio(audio):
-        # Process with Inzwa
+        # Process with Izwi
         return audio
     
     iface = gr.Interface(
@@ -840,15 +840,15 @@ gradio==4.0.0
 #### Fly.io Deployment:
 ```toml
 # fly.toml
-app = "inzwa"
+app = "izwi"
 primary_region = "jnb"  # Johannesburg for Africa
 
 [build]
   dockerfile = "Dockerfile"
 
 [env]
-  INZWA_DEBUG = "false"
-  INZWA_CORS_ALLOWED_ORIGINS = "https://inzwa.fly.dev"
+  IZWI_DEBUG = "false"
+  IZWI_CORS_ALLOWED_ORIGINS = "https://izwi.fly.dev"
 
 [experimental]
   auto_rollback = true
@@ -941,7 +941,7 @@ jobs:
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
-        git remote add hf https://huggingface.co/spaces/inzwa/demo
+        git remote add hf https://huggingface.co/spaces/izwi/demo
         git push hf main --force
 
   deploy-fly:
@@ -981,10 +981,10 @@ jobs:
         context: .
         push: true
         tags: |
-          inzwa/inzwa:latest
-          inzwa/inzwa:${{ github.sha }}
-        cache-from: type=registry,ref=inzwa/inzwa:buildcache
-        cache-to: type=registry,ref=inzwa/inzwa:buildcache,mode=max
+          izwi/izwi:latest
+          izwi/izwi:${{ github.sha }}
+        cache-from: type=registry,ref=izwi/izwi:buildcache
+        cache-to: type=registry,ref=izwi/izwi:buildcache,mode=max
 ```
 
 #### Monitoring Setup:
@@ -996,12 +996,12 @@ import json
 
 # Prometheus queries
 queries = {
-    "request_rate": "rate(inzwa_requests_total[5m])",
-    "error_rate": "rate(inzwa_requests_total{status=~'5..'}[5m])",
-    "p95_latency": "histogram_quantile(0.95, inzwa_request_duration_seconds)",
-    "active_sessions": "inzwa_active_sessions",
-    "asr_rtf": "inzwa_asr_rtf",
-    "llm_tokens_per_sec": "inzwa_llm_tokens_per_sec",
+    "request_rate": "rate(izwi_requests_total[5m])",
+    "error_rate": "rate(izwi_requests_total{status=~'5..'}[5m])",
+    "p95_latency": "histogram_quantile(0.95, izwi_request_duration_seconds)",
+    "active_sessions": "izwi_active_sessions",
+    "asr_rtf": "izwi_asr_rtf",
+    "llm_tokens_per_sec": "izwi_llm_tokens_per_sec",
     "memory_usage": "process_resident_memory_bytes",
     "cpu_usage": "rate(process_cpu_seconds_total[5m])"
 }
@@ -1009,7 +1009,7 @@ queries = {
 # Grafana dashboard
 dashboard = {
     "dashboard": {
-        "title": "Inzwa Metrics",
+        "title": "Izwi Metrics",
         "panels": [
             {
                 "title": "Request Rate",
@@ -1037,11 +1037,11 @@ print(json.dumps(dashboard, indent=2))
 #### Testing:
 ```bash
 # Test Docker build
-docker build -t inzwa:test .
-docker run --rm -p 8000:8000 inzwa:test
+docker build -t izwi:test .
+docker run --rm -p 8000:8000 izwi:test
 
 # Test container size
-docker images inzwa:test --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+docker images izwi:test --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
 # Should be < 500MB
 
 # Test deployment
@@ -1050,7 +1050,7 @@ fly status
 fly logs
 
 # Load test deployed version
-ab -n 1000 -c 50 https://inzwa.fly.dev/healthz
+ab -n 1000 -c 50 https://izwi.fly.dev/healthz
 ```
 
 #### Acceptance Criteria:
@@ -1191,14 +1191,14 @@ def on_locust_init(environment, **kwargs):
 import asyncio
 import time
 import numpy as np
-from inzwa.api.app import app
+from izwi.api.app import app
 from fastapi.testclient import TestClient
 
 async def benchmark_latency():
     """Benchmark end-to-end latency."""
     
     print("=" * 50)
-    print("Inzwa E2E Latency Benchmark")
+    print("Izwi E2E Latency Benchmark")
     print("=" * 50)
     
     # Test scenarios
@@ -1310,9 +1310,9 @@ async def test_memory_usage():
     print("Initial memory:", process.memory_info().rss / 1024 / 1024, "MB")
     
     # Import and initialize
-    from inzwa.asr.engine import create_asr_engine
-    from inzwa.llm.engine import create_llm_engine
-    from inzwa.tts.engine import create_tts_engine
+    from izwi.asr.engine import create_asr_engine
+    from izwi.llm.engine import create_llm_engine
+    from izwi.tts.engine import create_tts_engine
     
     asr = create_asr_engine()
     llm = create_llm_engine()
@@ -1376,7 +1376,7 @@ if __name__ == "__main__":
 # scripts/security_audit.sh
 
 echo "======================================"
-echo "Inzwa Security Audit"
+echo "Izwi Security Audit"
 echo "======================================"
 
 # 1. Dependency scanning
@@ -1396,9 +1396,9 @@ semgrep --config=auto src/
 
 # 4. Docker scanning
 echo -e "\n[4] Scanning Docker image..."
-docker build -t inzwa:scan .
-trivy image inzwa:scan
-grype inzwa:scan
+docker build -t izwi:scan .
+trivy image izwi:scan
+grype izwi:scan
 
 # 5. CORS testing
 echo -e "\n[5] Testing CORS..."
@@ -1596,13 +1596,13 @@ def generate_sbom():
     sbom = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.4",
-        "serialNumber": "urn:uuid:inzwa-sbom-001",
+        "serialNumber": "urn:uuid:izwi-sbom-001",
         "version": 1,
         "metadata": {
             "timestamp": "2024-01-01T00:00:00Z",
-            "tools": [{"name": "inzwa-sbom-generator", "version": "1.0"}],
+            "tools": [{"name": "izwi-sbom-generator", "version": "1.0"}],
             "component": {
-                "name": "inzwa",
+                "name": "izwi",
                 "version": "0.1.0",
                 "type": "application"
             }
@@ -1671,4 +1671,4 @@ if __name__ == "__main__":
 
 ---
 
-**🎉 Congratulations! Inzwa MVP is ready for launch! 🎉**
+**🎉 Congratulations! Izwi MVP is ready for launch! 🎉**

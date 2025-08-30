@@ -8,7 +8,7 @@
 **Dependencies:** None
 
 #### Tasks:
-- [ ] 1.1.1 Create `.env.example` with all INZWA_ variables
+- [ ] 1.1.1 Create `.env.example` with all IZWI_ variables
 - [ ] 1.1.2 Set up Poetry with exact versions
 - [ ] 1.1.3 Configure pre-commit hooks (black, ruff, mypy)
 - [ ] 1.1.4 Set up logging structure (no raw payloads)
@@ -19,33 +19,33 @@
 **.env.example:**
 ```bash
 # Core Settings (Per .cursorrules)
-INZWA_DEBUG=false
-INZWA_CORS_ALLOWED_ORIGINS=http://localhost:7860
-INZWA_REQUEST_TIMEOUT_S=5.0
-INZWA_MAX_TEXT_CHARS=400
-INZWA_MAX_AUDIO_SECONDS=20
-INZWA_ENABLE_WEBRTC=false
+IZWI_DEBUG=false
+IZWI_CORS_ALLOWED_ORIGINS=http://localhost:7860
+IZWI_REQUEST_TIMEOUT_S=5.0
+IZWI_MAX_TEXT_CHARS=400
+IZWI_MAX_AUDIO_SECONDS=20
+IZWI_ENABLE_WEBRTC=false
 
 # ASR Settings
-INZWA_ASR_ENGINE=faster-whisper
-INZWA_ASR_MODEL=small
-INZWA_ASR_DEVICE=cpu
-INZWA_ASR_COMPUTE_TYPE=int8
+IZWI_ASR_ENGINE=faster-whisper
+IZWI_ASR_MODEL=small
+IZWI_ASR_DEVICE=cpu
+IZWI_ASR_COMPUTE_TYPE=int8
 
 # LLM Settings
-INZWA_LLM_ENGINE=llama-cpp
-INZWA_LLM_MODEL=mistral-2b-shona-lora
-INZWA_LLM_QUANTIZATION=Q4_K_M
-INZWA_LLM_MAX_TOKENS=512
+IZWI_LLM_ENGINE=llama-cpp
+IZWI_LLM_MODEL=mistral-2b-shona-lora
+IZWI_LLM_QUANTIZATION=Q4_K_M
+IZWI_LLM_MAX_TOKENS=512
 
 # TTS Settings
-INZWA_TTS_ENGINE=coqui-vits-lite
-INZWA_TTS_USE_ONNX=true
-INZWA_AUDIO_OUT_CODEC=opus
+IZWI_TTS_ENGINE=coqui-vits-lite
+IZWI_TTS_USE_ONNX=true
+IZWI_AUDIO_OUT_CODEC=opus
 
 # Performance
-INZWA_MAX_CONCURRENT_SESSIONS=50
-INZWA_BACKPRESSURE_THRESHOLD=8
+IZWI_MAX_CONCURRENT_SESSIONS=50
+IZWI_BACKPRESSURE_THRESHOLD=8
 ```
 
 **pyproject.toml dependencies:**
@@ -78,13 +78,13 @@ pytest tests/test_config.py::test_validation -v
 grep -r "password\|secret\|key" src/ && exit 1 || echo "✓ No secrets"
 
 # Check Docker build size
-docker build -t inzwa:test .
-docker images inzwa:test --format "Size: {{.Size}}"
+docker build -t izwi:test .
+docker images izwi:test --format "Size: {{.Size}}"
 # Expected: < 500MB
 ```
 
 #### Acceptance Criteria:
-- ✅ All env vars use INZWA_ prefix
+- ✅ All env vars use IZWI_ prefix
 - ✅ Settings validate with pydantic v2
 - ✅ Docker image < 500MB
 - ✅ No hardcoded secrets
@@ -107,7 +107,7 @@ docker images inzwa:test --format "Size: {{.Size}}"
 
 #### Code Implementation:
 ```python
-# src/inzwa/api/app.py
+# src/izwi/api/app.py
 from fastapi import FastAPI, Request, Response
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -116,9 +116,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 import uuid
 import time
 
-from inzwa.ops.settings import settings
-from inzwa.ops.metrics import METRICS
-from inzwa.ops.logging import logger
+from izwi.ops.settings import settings
+from izwi.ops.metrics import METRICS
+from izwi.ops.logging import logger
 
 class TimedRoute(APIRoute):
     """Custom route to add timing and request ID."""
@@ -160,7 +160,7 @@ class TimedRoute(APIRoute):
         return custom_handler
 
 app = FastAPI(
-    title="Inzwa API",
+    title="Izwi API",
     version="0.1.0",
     default_response_class=ORJSONResponse,
     route_class=TimedRoute,
@@ -234,7 +234,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # tests/test_phase1_api.py
 import pytest
 from fastapi.testclient import TestClient
-from inzwa.api.app import app
+from izwi.api.app import app
 
 client = TestClient(app)
 
@@ -335,14 +335,14 @@ async def test_concurrent_requests():
 
 #### Code Implementation:
 ```python
-# src/inzwa/api/health.py
+# src/izwi/api/health.py
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 import asyncio
 import time
 
-from inzwa.ops.logging import logger
-from inzwa.models.registry import model_registry
+from izwi.ops.logging import logger
+from izwi.models.registry import model_registry
 
 router = APIRouter(tags=["health"])
 
@@ -497,7 +497,7 @@ def test_readyz_when_ready():
 @pytest.mark.asyncio
 async def test_graceful_shutdown():
     """Test graceful shutdown."""
-    from inzwa.api.health import graceful_shutdown, shutdown_event
+    from izwi.api.health import graceful_shutdown, shutdown_event
     
     # Start shutdown
     task = asyncio.create_task(graceful_shutdown())
@@ -567,7 +567,7 @@ ab -n 10000 -c 100 http://localhost:8000/healthz
 
 #### Code Implementation:
 ```python
-# src/inzwa/asr/engine.py
+# src/izwi/asr/engine.py
 from abc import ABC, abstractmethod
 from typing import AsyncIterator, Optional
 import numpy as np
@@ -575,10 +575,10 @@ from faster_whisper import WhisperModel
 import asyncio
 import time
 
-from inzwa.models import TranscriptChunk
-from inzwa.ops.settings import settings
-from inzwa.ops.logging import logger
-from inzwa.ops.metrics import METRICS
+from izwi.models import TranscriptChunk
+from izwi.ops.settings import settings
+from izwi.ops.logging import logger
+from izwi.ops.metrics import METRICS
 
 class ASREngine(ABC):
     """Abstract base for ASR engines."""
@@ -747,7 +747,7 @@ import pytest
 import asyncio
 import time
 import numpy as np
-from inzwa.asr.engine import FasterWhisperEngine
+from izwi.asr.engine import FasterWhisperEngine
 
 @pytest.fixture
 async def asr_engine():
@@ -876,7 +876,7 @@ async def test_concurrent_streams(asr_engine):
 import asyncio
 import time
 import numpy as np
-from inzwa.asr.engine import create_asr_engine
+from izwi.asr.engine import create_asr_engine
 
 async def benchmark():
     """Benchmark ASR performance."""

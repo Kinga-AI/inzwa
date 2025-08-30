@@ -16,7 +16,7 @@
 
 #### Code Implementation:
 ```python
-# src/inzwa/orch/orchestrator.py
+# src/izwi/orch/orchestrator.py
 """
 Ultra-light orchestrator per .cursorrules.
 
@@ -26,9 +26,9 @@ from typing import AsyncIterator
 import asyncio
 from dataclasses import dataclass
 
-from inzwa.models import AudioChunk, TranscriptChunk, TokenChunk, Message
-from inzwa.ops.logging import logger
-from inzwa.ops.metrics import METRICS
+from izwi.models import AudioChunk, TranscriptChunk, TokenChunk, Message
+from izwi.ops.logging import logger
+from izwi.ops.metrics import METRICS
 
 @dataclass
 class OrchestratorConfig:
@@ -205,7 +205,7 @@ class Orchestrator:
 
 #### Advanced Features (Separate Module):
 ```python
-# src/inzwa/orch/advanced.py
+# src/izwi/orch/advanced.py
 """
 Advanced orchestrator features.
 
@@ -215,8 +215,8 @@ from typing import Optional, Dict, Any
 import time
 import asyncio
 
-from inzwa.orch.orchestrator import Orchestrator
-from inzwa.ops.logging import logger
+from izwi.orch.orchestrator import Orchestrator
+from izwi.ops.logging import logger
 
 class DialogueState:
     """Manages conversation state."""
@@ -377,8 +377,8 @@ import asyncio
 import time
 from unittest.mock import AsyncMock, MagicMock
 
-from inzwa.orch.orchestrator import Orchestrator, OrchestratorConfig
-from inzwa.models import AudioChunk, TranscriptChunk, TokenChunk
+from izwi.orch.orchestrator import Orchestrator, OrchestratorConfig
+from izwi.models import AudioChunk, TranscriptChunk, TokenChunk
 
 class MockASR:
     """Mock ASR for testing."""
@@ -550,7 +550,7 @@ async def test_orchestrator_cancellation(orchestrator):
 def test_orchestrator_function_length():
     """Verify functions are <50 lines per .cursorrules."""
     import inspect
-    from inzwa.orch.orchestrator import Orchestrator
+    from izwi.orch.orchestrator import Orchestrator
     
     for name, method in inspect.getmembers(Orchestrator, inspect.isfunction):
         if not name.startswith("_"):
@@ -570,7 +570,7 @@ def test_orchestrator_function_length():
 @pytest.mark.asyncio
 async def test_dialogue_state():
     """Test dialogue state management."""
-    from inzwa.orch.advanced import DialogueState
+    from izwi.orch.advanced import DialogueState
     
     state = DialogueState()
     
@@ -592,7 +592,7 @@ async def test_dialogue_state():
 @pytest.mark.asyncio
 async def test_barge_in_detection():
     """Test barge-in handler."""
-    from inzwa.orch.advanced import BargeInHandler
+    from izwi.orch.advanced import BargeInHandler
     
     handler = BargeInHandler(vad_threshold=0.5)
     
@@ -616,14 +616,14 @@ async def test_barge_in_detection():
 import asyncio
 import time
 import psutil
-from inzwa.orch.orchestrator import Orchestrator
+from izwi.orch.orchestrator import Orchestrator
 
 async def test_orchestrator_latency():
     """Test orchestrator latency targets."""
     # Create real components (or fast mocks)
-    from inzwa.asr.engine import create_asr_engine
-    from inzwa.llm.engine import create_llm_engine
-    from inzwa.tts.engine import create_tts_engine
+    from izwi.asr.engine import create_asr_engine
+    from izwi.llm.engine import create_llm_engine
+    from izwi.tts.engine import create_tts_engine
     
     asr = create_asr_engine()
     llm = create_llm_engine()
@@ -747,7 +747,7 @@ async def test_orchestrator_memory():
 
 #### Code Implementation:
 ```python
-# src/inzwa/api/websocket.py
+# src/izwi/api/websocket.py
 """
 WebSocket handler for full-duplex audio streaming.
 
@@ -760,12 +760,12 @@ import json
 import uuid
 import time
 
-from inzwa.orch.orchestrator import Orchestrator
-from inzwa.orch.advanced import DialogueState, BargeInHandler
-from inzwa.ops.settings import settings
-from inzwa.ops.logging import logger
-from inzwa.ops.metrics import METRICS
-from inzwa.api.auth import verify_api_key
+from izwi.orch.orchestrator import Orchestrator
+from izwi.orch.advanced import DialogueState, BargeInHandler
+from izwi.ops.settings import settings
+from izwi.ops.logging import logger
+from izwi.ops.metrics import METRICS
+from izwi.api.auth import verify_api_key
 
 class WebSocketSession:
     """Manages a single WebSocket session."""
@@ -877,9 +877,9 @@ async def websocket_endpoint(
         session = await ws_manager.connect(websocket)
         
         # Create orchestrator
-        from inzwa.asr.engine import create_asr_engine
-        from inzwa.llm.engine import create_llm_engine
-        from inzwa.tts.engine import create_tts_engine
+        from izwi.asr.engine import create_asr_engine
+        from izwi.llm.engine import create_llm_engine
+        from izwi.tts.engine import create_tts_engine
         
         asr = create_asr_engine()
         llm = create_llm_engine()
@@ -1052,7 +1052,7 @@ async def handle_control_message(
 #### Client Implementation Example:
 ```javascript
 // example_client.js
-class InzwaWebSocketClient {
+class IzwiWebSocketClient {
     constructor(url) {
         this.url = url;
         this.ws = null;
@@ -1065,7 +1065,7 @@ class InzwaWebSocketClient {
         this.ws = new WebSocket(this.url);
         
         this.ws.onopen = () => {
-            console.log('Connected to Inzwa');
+            console.log('Connected to Izwi');
         };
         
         this.ws.onmessage = async (event) => {
@@ -1084,7 +1084,7 @@ class InzwaWebSocketClient {
         };
         
         this.ws.onclose = () => {
-            console.log('Disconnected from Inzwa');
+            console.log('Disconnected from Izwi');
             this.reconnect();
         };
     }
@@ -1185,7 +1185,7 @@ class InzwaWebSocketClient {
 }
 
 // Usage
-const client = new InzwaWebSocketClient('ws://localhost:8000/ws/audio');
+const client = new IzwiWebSocketClient('ws://localhost:8000/ws/audio');
 client.connect();
 ```
 
@@ -1201,7 +1201,7 @@ from unittest.mock import patch, AsyncMock
 @pytest.mark.asyncio
 async def test_websocket_connection():
     """Test WebSocket connection."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     
@@ -1216,7 +1216,7 @@ async def test_websocket_connection():
 @pytest.mark.asyncio
 async def test_websocket_audio_streaming():
     """Test audio streaming."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     
@@ -1239,7 +1239,7 @@ async def test_websocket_audio_streaming():
 @pytest.mark.asyncio
 async def test_websocket_backpressure():
     """Test backpressure handling."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     
@@ -1264,7 +1264,7 @@ async def test_websocket_backpressure():
 @pytest.mark.asyncio
 async def test_websocket_invalid_frame():
     """Test invalid frame handling."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     
@@ -1280,7 +1280,7 @@ async def test_websocket_invalid_frame():
 @pytest.mark.asyncio
 async def test_websocket_control_messages():
     """Test control message handling."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     
@@ -1298,13 +1298,13 @@ async def test_websocket_control_messages():
 @pytest.mark.asyncio
 async def test_websocket_session_management():
     """Test session lifecycle."""
-    from inzwa.api.websocket import ws_manager
+    from izwi.api.websocket import ws_manager
     
     # Check initial state
     assert len(ws_manager.sessions) == 0
     
     # Connect
-    from inzwa.api.app import app
+    from izwi.api.app import app
     client = TestClient(app)
     
     with client.websocket_connect("/ws/audio") as ws:
@@ -1320,7 +1320,7 @@ async def test_websocket_session_management():
 @pytest.mark.asyncio
 async def test_websocket_concurrent_sessions():
     """Test multiple concurrent sessions."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     sessions = []
@@ -1342,7 +1342,7 @@ async def test_websocket_concurrent_sessions():
 @pytest.mark.asyncio
 async def test_websocket_reconnection():
     """Test reconnection handling."""
-    from inzwa.api.app import app
+    from izwi.api.app import app
     
     client = TestClient(app)
     

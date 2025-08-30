@@ -1,4 +1,4 @@
-## Deployment Guide: Inzwa (Python‑Only)
+## Deployment Guide: Izwi (Python‑Only)
 
 ### Targets
 
@@ -18,7 +18,7 @@
 
 ```yaml
 services:
-  inzwa:
+  izwi:
     build: .
     ports: ["8000:8000"]
     environment:
@@ -32,7 +32,7 @@ services:
 
 ### Runtime
 
-- Run: `uvicorn inzwa.api.app:app --host 0.0.0.0 --port 8000 --workers 1`
+- Run: `uvicorn izwi.api.app:app --host 0.0.0.0 --port 8000 --workers 1`
 - GPU path: install CUDA/cuDNN images and vLLM; set `LLM_ENGINE=vllm`
 
 ### CI/CD (GitHub Actions)

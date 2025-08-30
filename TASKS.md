@@ -1,4 +1,4 @@
-# Inzwa MVP Development Tasks - Detailed Roadmap
+# Izwi MVP Development Tasks - Detailed Roadmap
 
 ## Overview
 Build a state-of-the-art Shona voice assistant with <1s latency, following .cursorrules strictly.

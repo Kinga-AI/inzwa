@@ -1,4 +1,4 @@
-## System Design: Inzwa Realtime Voice Assistant (Python‑Only)
+## System Design: Izwi Realtime Voice Assistant (Python‑Only)
 
 ### Overview
 
@@ -117,7 +117,7 @@ sequenceDiagram
 ### Observability Details
 
 - Prometheus metrics endpoints: `/metrics`
-- Example metrics: `inzwa_asr_partial_latency_ms`, `inzwa_llm_ttfw_ms`, `inzwa_tts_rtf`, `inzwa_session_active`
+- Example metrics: `izwi_asr_partial_latency_ms`, `izwi_llm_ttfw_ms`, `izwi_tts_rtf`, `izwi_session_active`
 - OpenTelemetry traces: spans per stage with session + turn IDs
 
 ### Testing Strategy (System)

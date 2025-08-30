@@ -1,8 +1,6 @@
-# 🎙️ Inzwa - Real-Time Shona Voice Assistant 🇿🇼
+# 🎙️ Izwi - Real-Time Shona Voice Assistant 🇿🇼
 
-*"Hey Inzwa-ka, zviri sei?"*
-
-**Inzwa** ("Listen" in Shona) is a state-of-the-art, open-source, real-time speech-to-speech AI assistant that speaks fluent Shona. Built with cutting-edge ML models and optimized for ultra-low latency (<1s end-to-end), it enables natural voice conversations in Shona for millions of native speakers worldwide.
+*Izwi* ("Voice" in Shona) is a state-of-the-art, open-source, real-time speech-to-speech AI assistant that speaks fluent Shona. Built with cutting-edge ML models and optimized for ultra-low latency (<1s end-to-end), it enables natural voice conversations in Shona for millions of native speakers worldwide.
 
 ---
 
@@ -82,11 +80,11 @@ This project is fully open-source under the [Apache-2.0 License](LICENSE).
 ## 📧 Contact & Community
 
 - **Maintainer**: [Simbarashe Timire](https://github.com/TimireSimbarashe)
-- **Issues**: [GitHub Issues](https://github.com/kinga-ai/inzwa/issues)
+- **Issues**: [GitHub Issues](https://github.com/kinga-ai/izwi/issues)
 - **Security**: security@kinga.ai
-- **Discussions**: [GitHub Discussions](https://github.com/kinga-ai/inzwa/discussions)
+- **Discussions**: [GitHub Discussions](https://github.com/kinga-ai/izwi/discussions)
 - **Community**: [Discord](https://discord.gg/kinga-ai) (coming soon)
 
 ---
 
-**Inzwa** - Together, let's unlock powerful AI-driven interactions in the Shona language, bringing cutting-edge voice technology to millions of native speakers worldwide 🌍
+**Izwi** - Together, let's unlock powerful AI-driven interactions in the Shona language, bringing cutting-edge voice technology to millions of native speakers worldwide 🌍

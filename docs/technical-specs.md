@@ -1,4 +1,4 @@
-## Technical Specifications: Inzwa (Python‑Only)
+## Technical Specifications: Izwi (Python‑Only)
 
 ### Runtime and Dependencies (Per .cursorrules)
 
@@ -59,7 +59,7 @@
 
 ```python
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="INZWA_", case_sensitive=False)
+    model_config = SettingsConfigDict(env_prefix="IZWI_", case_sensitive=False)
     debug: bool = False
     cors_allowed_origins: str = "http://localhost:7860"
     request_timeout_s: float = 5.0
